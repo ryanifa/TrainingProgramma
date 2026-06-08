@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.2"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.3"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-08";
 
   const STORE_TRAININGS = "tp_trainings";

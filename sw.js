@@ -1,5 +1,5 @@
 /* sw.js — eenvoudige offline cache voor de app-shell */
-const CACHE = "zwemtraining-1.1.2";
+const CACHE = "zwemtraining-1.1.3";
 const ASSETS = [
   "./",
   "./index.html",
@@ -31,15 +31,16 @@ self.addEventListener("activate", (e) => {
 
 self.addEventListener("fetch", (e) => {
   const url = new URL(e.request.url);
-  // CDN (pdf.js) niet cachen: alleen netwerk
-  if (url.origin !== location.origin) return;
+  if (url.origin !== location.origin) return;      // CDN (pdf.js) → standaard netwerk
+  if (e.request.method !== "GET") return;
+  // Eerst netwerk (altijd de nieuwste versie), val terug op cache als offline.
   e.respondWith(
-    caches.match(e.request).then((cached) =>
-      cached || fetch(e.request).then((res) => {
+    fetch(e.request)
+      .then((res) => {
         const copy = res.clone();
         caches.open(CACHE).then((c) => c.put(e.request, copy)).catch(() => {});
         return res;
-      }).catch(() => cached)
-    )
+      })
+      .catch(() => caches.match(e.request))
   );
 });
