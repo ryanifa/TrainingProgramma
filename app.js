@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.1"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.2"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-08";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -104,18 +104,25 @@
     summary.classList.remove("hidden");
     content.innerHTML = "";
 
+    const sections = Array.isArray(t.sections) ? t.sections : [];
+    if (sections.length === 0) {
+      setNotice("⚠️ De training \"" + (t.name || "?") + "\" bevat geen oefeningen of heeft een onverwacht formaat. Controleer de bron-tekst en voeg 'm opnieuw toe.", "err");
+    } else {
+      setNotice("");
+    }
+
     const tChecks = checksFor(t.id);
     let total = 0, done = 0;
 
-    t.sections.forEach((section, si) => {
+    sections.forEach((section, si) => {
       const sec = document.createElement("section");
       sec.className = "block";
       const h = document.createElement("h2");
       h.className = "block-title";
-      h.textContent = section.title;
+      h.textContent = section.title || "";
       sec.appendChild(h);
 
-      section.exercises.forEach((ex, ei) => {
+      (Array.isArray(section.exercises) ? section.exercises : []).forEach((ex, ei) => {
         total++;
         const key = `${si}-${ei}`;
         const isDone = !!tChecks[key];
@@ -159,7 +166,7 @@
     progressText.textContent = `${done} van ${total} afgevinkt`;
     progressFill.style.width = total ? (done / total) * 100 + "%" : "0%";
 
-    const totals = TrainingParser.totalsPerLevel(t);
+    const totals = TrainingParser.totalsPerLevel({ sections });
     totalsEl.innerHTML = "";
     for (const lvl of [1, 2, 3]) {
       if (!totals[lvl]) continue;
