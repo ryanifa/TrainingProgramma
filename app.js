@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.1"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-08";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -378,9 +378,19 @@
     refreshGistStatus();
   }
 
+  function setNotice(html, kind) {
+    const el = $("gistNotice");
+    if (!html) { el.classList.add("hidden"); el.innerHTML = ""; return; }
+    el.className = "gist-notice" + (kind ? " " + kind : "");
+    el.innerHTML = html;
+    const retry = el.querySelector("[data-retry]");
+    if (retry) retry.addEventListener("click", () => pullFromGist(false));
+  }
+
   async function pullFromGist(silent) {
     if (!gistId) return;
     if (!silent) setMsg("Trainingen ophalen…", "busy");
+    setNotice("⏳ Gedeelde trainingen laden…", "busy");
     try {
       const data = await GistSync.fetchTrainings(gistId, token);
       trainings = data.trainings || [];
@@ -389,8 +399,15 @@
         activeId = trainings[0] ? trainings[0].id : null;
       save(STORE_ACTIVE, activeId);
       render();
+      if (trainings.length === 0) {
+        setNotice("☁️ Verbonden met de gedeelde gist, maar er staan <strong>nog geen trainingen</strong> in. Voeg er één toe via <strong>+ Nieuw</strong> (token nodig) om te delen.", "warn");
+      } else {
+        setNotice("");
+      }
       if (!silent) setMsg("✓ " + trainings.length + " training(en) opgehaald.", "ok");
     } catch (e) {
+      setNotice("⚠️ Kon de gedeelde trainingen niet laden: " + e.message +
+        " <button class=\"link-btn\" data-retry>Opnieuw proberen</button>", "err");
       if (!silent) setMsg("⚠️ " + e.message, "err");
     }
   }

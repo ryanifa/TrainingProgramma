@@ -118,6 +118,19 @@ body.no-scroll { overflow: hidden; }
 .badge.all .badge-tag { background: var(--brand); }
 .notes { margin-top: 8px; font-size: 13px; color: var(--muted); }
 
+/* Gist-melding (laden / leeg / fout) */
+.gist-notice {
+  border-radius: 12px; padding: 12px 14px; margin-bottom: 14px;
+  font-size: 14px; font-weight: 600; line-height: 1.4;
+}
+.gist-notice.busy { background: #e7f3f8; color: var(--brand-d); }
+.gist-notice.warn { background: #fff5e6; color: #8a5a00; }
+.gist-notice.err  { background: #fdeaea; color: #a3251f; }
+.link-btn {
+  display: inline-block; margin-left: 6px; background: none; border: 0;
+  color: inherit; font-weight: 800; text-decoration: underline; cursor: pointer; padding: 0;
+}
+
 /* Footer / versie */
 .app-footer {
   text-align: center; color: var(--muted); font-size: 12px;
