@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.3"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.4"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-08";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -412,10 +412,12 @@
         setNotice("");
       }
       if (!silent) setMsg("✓ " + trainings.length + " training(en) opgehaald.", "ok");
+      return true;
     } catch (e) {
       setNotice("⚠️ Kon de gedeelde trainingen niet laden: " + e.message +
         " <button class=\"link-btn\" data-retry>Opnieuw proberen</button>", "err");
       if (!silent) setMsg("⚠️ " + e.message, "err");
+      return false;
     }
   }
 
@@ -439,7 +441,9 @@
     localStorage.setItem(STORE_GISTID, gistId);
     localStorage.setItem(STORE_TOKEN, token);
     refreshGistStatus();
-    await pullFromGist(false);
+    const ok = await pullFromGist(false);
+    // Bij succes het venster sluiten, zodat de trainingen zichtbaar worden
+    if (ok && trainings.length > 0) setTimeout(closeAll, 600);
   }
 
   async function createGist() {
