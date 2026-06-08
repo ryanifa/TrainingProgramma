@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0a7ea4" />
+  <title>Zwemtraining</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-row">
+      <h1 class="app-title">🏊 Zwemtraining</h1>
+      <button id="menuBtn" class="icon-btn" aria-label="Menu">⋯</button>
+    </div>
+    <div class="topbar-row">
+      <select id="trainingSelect" class="training-select" aria-label="Kies training"></select>
+      <button id="addBtn" class="add-btn">+ Nieuw</button>
+    </div>
+  </header>
+
+  <main id="main" class="main">
+    <section id="summary" class="summary hidden">
+      <div class="progress-wrap">
+        <div class="progress-label"><span id="progressText">0 van 0 afgevinkt</span></div>
+        <div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div>
+      </div>
+      <div id="totals" class="totals"></div>
+    </section>
+
+    <div id="content" class="content"></div>
+
+    <div id="emptyState" class="empty-state">
+      <p class="empty-emoji">📋</p>
+      <h2>Nog geen training</h2>
+      <p>Voeg je eerste training toe via de knop <strong>+ Nieuw</strong>. Plak de tekst of upload een PDF.</p>
+      <button id="emptyAddBtn" class="add-btn big">+ Training toevoegen</button>
+    </div>
+  </main>
+
+  <!-- Menu sheet -->
+  <div id="menuSheet" class="sheet hidden">
+    <div class="sheet-backdrop" data-close="menu"></div>
+    <div class="sheet-panel">
+      <button class="sheet-item" id="resetBtn">↺ Vinkjes wissen</button>
+      <button class="sheet-item danger" id="deleteBtn">🗑 Training verwijderen</button>
+      <button class="sheet-item" data-close="menu">Annuleren</button>
+    </div>
+  </div>
+
+  <!-- Add training modal -->
+  <div id="addModal" class="modal hidden">
+    <div class="modal-backdrop" data-close="add"></div>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h2>Nieuwe training</h2>
+        <button class="icon-btn" data-close="add" aria-label="Sluiten">✕</button>
+      </div>
+
+      <div class="tabs">
+        <button class="tab active" data-tab="text">📝 Tekst plakken</button>
+        <button class="tab" data-tab="pdf">📄 PDF</button>
+      </div>
+
+      <div class="field">
+        <label for="nameInput">Naam (optioneel)</label>
+        <input id="nameInput" type="text" placeholder="bijv. Training week 24" />
+      </div>
+
+      <div id="tabText" class="tab-panel">
+        <label for="textInput">Plak hier je training</label>
+        <textarea id="textInput" rows="10" placeholder="Inzwemmen:&#10;- Borstcrawl 60% (niveau 1: 100m, niveau 2: 150m, niveau 3: 200m)&#10;..."></textarea>
+      </div>
+
+      <div id="tabPdf" class="tab-panel hidden">
+        <label class="file-drop" for="pdfInput">
+          <span id="pdfLabel">📄 Tik om een PDF te kiezen</span>
+          <input id="pdfInput" type="file" accept="application/pdf" hidden />
+        </label>
+        <p class="hint">De tekst wordt automatisch uit de PDF gehaald. Controleer altijd het voorbeeld hieronder — PDF-opmaak kan soms rommelig overkomen.</p>
+      </div>
+
+      <div id="previewWrap" class="preview-wrap hidden">
+        <h3>Voorbeeld</h3>
+        <div id="preview" class="preview"></div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn ghost" data-close="add">Annuleren</button>
+        <button id="saveBtn" class="btn primary" disabled>Opslaan</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script src="parser.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

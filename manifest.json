@@ -1,0 +1,15 @@
+{
+  "name": "Zwemtraining",
+  "short_name": "Zwemtraining",
+  "description": "Vink je zwemtraining af per oefening, met 3 niveaus naast elkaar.",
+  "start_url": ".",
+  "scope": ".",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f3f5f7",
+  "theme_color": "#0a7ea4",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+  ]
+}
