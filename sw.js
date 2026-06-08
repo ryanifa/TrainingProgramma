@@ -1,5 +1,5 @@
 /* sw.js — eenvoudige offline cache voor de app-shell */
-const CACHE = "zwemtraining-v2";
+const CACHE = "zwemtraining-1.1.0";
 const ASSETS = [
   "./",
   "./index.html",
@@ -13,7 +13,12 @@ const ASSETS = [
 ];
 
 self.addEventListener("install", (e) => {
-  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)).then(() => self.skipWaiting()));
+  // wacht met activeren tot de gebruiker op "Vernieuwen" tikt
+  e.waitUntil(caches.open(CACHE).then((c) => c.addAll(ASSETS)));
+});
+
+self.addEventListener("message", (e) => {
+  if (e.data === "skip-waiting") self.skipWaiting();
 });
 
 self.addEventListener("activate", (e) => {

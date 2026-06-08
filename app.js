@@ -2,6 +2,9 @@
 (function () {
   "use strict";
 
+  const APP_VERSION = "1.1.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const BUILD_DATE = "2026-06-08";
+
   const STORE_TRAININGS = "tp_trainings";
   const STORE_ACTIVE = "tp_active";
   const STORE_CHECKS = "tp_checks";
@@ -506,10 +509,40 @@
       "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
   }
 
-  // Service worker voor offline gebruik
+  // Versielabel tonen
+  $("versionLabel").textContent = "versie " + APP_VERSION + " · " + BUILD_DATE;
+
+  // Service worker + melding bij een nieuwe versie
   if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () =>
-      navigator.serviceWorker.register("sw.js").catch(() => {}));
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("sw.js").then((reg) => {
+        // controleer direct op een update
+        reg.update().catch(() => {});
+        reg.addEventListener("updatefound", () => {
+          const sw = reg.installing;
+          if (!sw) return;
+          sw.addEventListener("statechange", () => {
+            // nieuwe versie geïnstalleerd terwijl er al een actief is
+            if (sw.state === "installed" && navigator.serviceWorker.controller) {
+              const bar = $("updateBar");
+              bar.classList.remove("hidden");
+              $("updateBtn").onclick = () => {
+                sw.postMessage("skip-waiting");
+                location.reload();
+              };
+            }
+          });
+        });
+      }).catch(() => {});
+
+      // herlaad zodra de nieuwe service worker de controle overneemt
+      let reloaded = false;
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (reloaded) return;
+        reloaded = true;
+        location.reload();
+      });
+    });
   }
 
   // Start

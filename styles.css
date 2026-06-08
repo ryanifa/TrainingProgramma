@@ -118,6 +118,27 @@ body.no-scroll { overflow: hidden; }
 .badge.all .badge-tag { background: var(--brand); }
 .notes { margin-top: 8px; font-size: 13px; color: var(--muted); }
 
+/* Footer / versie */
+.app-footer {
+  text-align: center; color: var(--muted); font-size: 12px;
+  padding: 24px 0 8px;
+}
+
+/* Update-melding */
+.update-bar {
+  position: fixed; left: 50%; transform: translateX(-50%);
+  bottom: calc(env(safe-area-inset-bottom) + 14px); z-index: 60;
+  display: flex; align-items: center; gap: 12px;
+  background: var(--ink); color: #fff;
+  padding: 10px 12px 10px 16px; border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(10, 25, 40, .35);
+  font-size: 14px; font-weight: 600; max-width: calc(100% - 24px);
+}
+.update-bar button {
+  background: var(--brand); color: #fff; border: 0;
+  border-radius: 999px; padding: 8px 14px; font-weight: 700; cursor: pointer;
+}
+
 /* Empty */
 .empty-state { text-align: center; padding: 50px 20px; color: var(--muted); }
 .empty-emoji { font-size: 52px; margin: 0; }
