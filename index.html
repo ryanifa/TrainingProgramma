@@ -46,6 +46,8 @@
   <div id="menuSheet" class="sheet hidden">
     <div class="sheet-backdrop" data-close="menu"></div>
     <div class="sheet-panel">
+      <button class="sheet-item" id="shareBtn">🔗 Deel link</button>
+      <button class="sheet-item" id="settingsBtn">☁️ Gedeelde trainingen (Gist)</button>
       <button class="sheet-item" id="resetBtn">↺ Vinkjes wissen</button>
       <button class="sheet-item danger" id="deleteBtn">🗑 Training verwijderen</button>
       <button class="sheet-item" data-close="menu">Annuleren</button>
@@ -96,8 +98,41 @@
     </div>
   </div>
 
+  <!-- Settings modal: gedeelde gist -->
+  <div id="settingsModal" class="modal hidden">
+    <div class="modal-backdrop" data-close="settings"></div>
+    <div class="modal-panel">
+      <div class="modal-head">
+        <h2>Gedeelde trainingen</h2>
+        <button class="icon-btn" data-close="settings" aria-label="Sluiten">✕</button>
+      </div>
+
+      <div id="gistStatus" class="gist-status">Niet verbonden — trainingen staan alleen op dit toestel.</div>
+
+      <div class="field">
+        <label for="gistIdInput">Gist-ID of -link</label>
+        <input id="gistIdInput" type="text" placeholder="bijv. 1a2b3c4d… of de volledige gist-URL" />
+        <p class="hint">Plak de gedeelde gist om trainingen op te halen. Lezen kan zonder token.</p>
+      </div>
+
+      <div class="field">
+        <label for="tokenInput">Gedeeld token (alleen nodig om te uploaden)</label>
+        <input id="tokenInput" type="password" placeholder="ghp_… (scope: gist)" autocomplete="off" />
+        <p class="hint">Het token van het club-account met scope <code>gist</code>. Wordt alleen op dit toestel bewaard.</p>
+      </div>
+
+      <div class="modal-actions wrap">
+        <button id="connectBtn" class="btn primary">Verbinden &amp; ophalen</button>
+        <button id="createGistBtn" class="btn ghost">Nieuwe gist aanmaken</button>
+        <button id="disconnectBtn" class="btn ghost">Loskoppelen</button>
+      </div>
+      <p id="gistMsg" class="gist-msg"></p>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="parser.js"></script>
+  <script src="gist.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

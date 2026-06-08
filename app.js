@@ -5,6 +5,8 @@
   const STORE_TRAININGS = "tp_trainings";
   const STORE_ACTIVE = "tp_active";
   const STORE_CHECKS = "tp_checks";
+  const STORE_GISTID = "tp_gistid";
+  const STORE_TOKEN = "tp_token";
 
   // ---- Opslag ----
   const load = (k, def) => {
@@ -15,6 +17,15 @@
   let trainings = load(STORE_TRAININGS, []);
   let activeId = load(STORE_ACTIVE, null);
   let checks = load(STORE_CHECKS, {}); // { trainingId: { "si-ei": true } }
+  let gistId = localStorage.getItem(STORE_GISTID) || "";
+  let token = localStorage.getItem(STORE_TOKEN) || "";
+
+  // Gist-ID kan via de gedeelde link binnenkomen: index.html#gist=<id>
+  const hashMatch = location.hash.match(/gist=([^&]+)/);
+  if (hashMatch) {
+    gistId = GistSync.parseGistId(decodeURIComponent(hashMatch[1]));
+    localStorage.setItem(STORE_GISTID, gistId);
+  }
 
   // ---- Elementen ----
   const $ = (id) => document.getElementById(id);
@@ -198,6 +209,8 @@
   function closeAll() {
     addModal.classList.add("hidden");
     menuSheet.classList.add("hidden");
+    const sm = document.getElementById("settingsModal");
+    if (sm) sm.classList.add("hidden");
     document.body.classList.remove("no-scroll");
   }
 
@@ -262,6 +275,7 @@
     save(STORE_ACTIVE, activeId);
     closeAll();
     render();
+    pushToGist(); // upload naar gedeelde gist indien verbonden
   }
 
   // ---- PDF import ----
@@ -325,6 +339,122 @@
     save(STORE_CHECKS, checks);
     closeAll();
     render();
+    pushToGist();
+  }
+
+  // ---- Gist synchronisatie ----
+  const settingsModal = $("settingsModal");
+  const gistStatus = $("gistStatus");
+  const gistMsg = $("gistMsg");
+  const gistIdInput = $("gistIdInput");
+  const tokenInput = $("tokenInput");
+
+  function setMsg(text, kind) {
+    gistMsg.textContent = text || "";
+    gistMsg.className = "gist-msg" + (kind ? " " + kind : "");
+  }
+
+  function refreshGistStatus() {
+    if (gistId) {
+      gistStatus.textContent = "Verbonden met gist " + gistId.slice(0, 8) + "… " +
+        (token ? "(uploaden mogelijk)" : "(alleen lezen — geen token)");
+      gistStatus.classList.add("ok");
+    } else {
+      gistStatus.textContent = "Niet verbonden — trainingen staan alleen op dit toestel.";
+      gistStatus.classList.remove("ok");
+    }
+  }
+
+  function openSettings() {
+    closeAll();
+    settingsModal.classList.remove("hidden");
+    document.body.classList.add("no-scroll");
+    gistIdInput.value = gistId;
+    tokenInput.value = token;
+    setMsg("");
+    refreshGistStatus();
+  }
+
+  async function pullFromGist(silent) {
+    if (!gistId) return;
+    if (!silent) setMsg("Trainingen ophalen…", "busy");
+    try {
+      const data = await GistSync.fetchTrainings(gistId, token);
+      trainings = data.trainings || [];
+      save(STORE_TRAININGS, trainings);
+      if (!trainings.find((t) => t.id === activeId))
+        activeId = trainings[0] ? trainings[0].id : null;
+      save(STORE_ACTIVE, activeId);
+      render();
+      if (!silent) setMsg("✓ " + trainings.length + " training(en) opgehaald.", "ok");
+    } catch (e) {
+      if (!silent) setMsg("⚠️ " + e.message, "err");
+    }
+  }
+
+  let pushTimer = null;
+  async function pushToGist() {
+    if (!gistId || !token) return; // alleen uploaden als er een token is
+    clearTimeout(pushTimer);
+    pushTimer = setTimeout(async () => {
+      try {
+        await GistSync.saveTrainings(gistId, token, trainings);
+      } catch (e) {
+        alert("Uploaden naar gedeelde gist mislukt: " + e.message);
+      }
+    }, 300);
+  }
+
+  async function connectGist() {
+    gistId = GistSync.parseGistId(gistIdInput.value);
+    token = tokenInput.value.trim();
+    if (!gistId) { setMsg("Vul een gist-ID of -link in.", "err"); return; }
+    localStorage.setItem(STORE_GISTID, gistId);
+    localStorage.setItem(STORE_TOKEN, token);
+    refreshGistStatus();
+    await pullFromGist(false);
+  }
+
+  async function createGist() {
+    token = tokenInput.value.trim();
+    if (!token) { setMsg("Een token (scope: gist) is nodig om een gist aan te maken.", "err"); return; }
+    setMsg("Gist aanmaken…", "busy");
+    try {
+      const id = await GistSync.createGist(token, trainings, "Zwemtrainingen (gedeeld)");
+      gistId = id;
+      localStorage.setItem(STORE_GISTID, gistId);
+      localStorage.setItem(STORE_TOKEN, token);
+      gistIdInput.value = gistId;
+      refreshGistStatus();
+      setMsg("✓ Gist aangemaakt. Deel de link via het menu (🔗).", "ok");
+    } catch (e) {
+      setMsg("⚠️ " + e.message, "err");
+    }
+  }
+
+  function disconnectGist() {
+    gistId = ""; token = "";
+    localStorage.removeItem(STORE_GISTID);
+    localStorage.removeItem(STORE_TOKEN);
+    gistIdInput.value = ""; tokenInput.value = "";
+    refreshGistStatus();
+    setMsg("Losgekoppeld. Trainingen blijven lokaal bewaard.", "ok");
+  }
+
+  function shareLink() {
+    closeAll();
+    if (!gistId) {
+      alert("Nog geen gedeelde gist. Open eerst ☁️ Gedeelde trainingen om te verbinden of een gist aan te maken.");
+      openSettings();
+      return;
+    }
+    const url = location.origin + location.pathname + "#gist=" + gistId;
+    const done = () => alert("Link gekopieerd:\n\n" + url + "\n\nDeel deze met je mede-trainers.");
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).then(done, () => prompt("Kopieer de link:", url));
+    } else {
+      prompt("Kopieer de link:", url);
+    }
   }
 
   // ---- Events ----
@@ -332,12 +462,20 @@
   $("emptyAddBtn").addEventListener("click", openAdd);
   $("saveBtn").addEventListener("click", doSave);
   $("menuBtn").addEventListener("click", () => {
-    if (!activeTraining()) { openAdd(); return; }
+    // Vinkjes/Verwijderen alleen relevant met een actieve training
+    const hasActive = !!activeTraining();
+    $("resetBtn").classList.toggle("hidden", !hasActive);
+    $("deleteBtn").classList.toggle("hidden", !hasActive);
     menuSheet.classList.remove("hidden");
     document.body.classList.add("no-scroll");
   });
   $("resetBtn").addEventListener("click", resetChecks);
   $("deleteBtn").addEventListener("click", deleteTraining);
+  $("settingsBtn").addEventListener("click", openSettings);
+  $("shareBtn").addEventListener("click", shareLink);
+  $("connectBtn").addEventListener("click", connectGist);
+  $("createGistBtn").addEventListener("click", createGist);
+  $("disconnectBtn").addEventListener("click", disconnectGist);
 
   trainingSelect.addEventListener("change", (e) => {
     activeId = e.target.value;
@@ -377,4 +515,6 @@
   // Start
   if (activeId && !activeTraining()) activeId = trainings[0] ? trainings[0].id : null;
   render();
+  // Verbonden met een gedeelde gist? Haal de nieuwste trainingen op.
+  if (gistId) pullFromGist(true);
 })();

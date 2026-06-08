@@ -23,6 +23,36 @@ en wordt lokaal op je toestel bewaard.
 - **Meerdere trainingen bewaren** en bovenaan wisselen via het keuzemenu.
 - **Werkt offline** (PWA) en kan op je beginscherm als app gezet worden.
 
+## Gedeelde trainingen (alle trainers via één link)
+
+Trainingen kunnen in een **GitHub Gist** worden bewaard, zodat alle trainers ze
+via één link kunnen openen **en** nieuwe trainingen kunnen uploaden.
+
+**Eenmalig opzetten (één keer, door de beheerder):**
+
+1. Maak (of gebruik) een **club-GitHub-account** dat eigenaar wordt van de gist.
+2. Maak op dat account een **Personal Access Token** met alleen de scope
+   `gist`:
+   - Classic token: GitHub → *Settings → Developer settings → Personal access
+     tokens → Tokens (classic) → Generate new token* → vink **`gist`** aan.
+3. Open de app → menu **⋯ → ☁️ Gedeelde trainingen** → plak het token →
+   **Nieuwe gist aanmaken**. De app maakt een secret gist met `trainingen.json`.
+4. Menu **⋯ → 🔗 Deel link** → de link (`…/#gist=<id>`) wordt gekopieerd.
+
+**Voor de andere trainers:**
+
+- **Alleen meekijken / afvinken:** open de gedeelde link. Trainingen worden
+  automatisch opgehaald — geen token nodig.
+- **Ook uploaden:** open de link, ga naar **☁️ Gedeelde trainingen** en plak
+  hetzelfde gedeelde token. Daarna belandt elke nieuwe training automatisch in
+  de gedeelde gist.
+
+> Eén gedeeld token betekent dat alle trainers in **dezelfde** set schrijven
+> (GitHub staat alleen de eigenaar van een gist toe te schrijven). Het token
+> heeft alleen `gist`-rechten en wordt enkel lokaal op elk toestel bewaard —
+> deel het binnen je trainersgroep, niet daarbuiten. Het afvinken van oefeningen
+> blijft per toestel (jouw voortgang botst niet met die van een ander).
+
 ## Het tekstformaat
 
 ```
@@ -78,6 +108,7 @@ python3 -m http.server 8000
 | `index.html` | Opbouw van de pagina |
 | `styles.css` | Vormgeving (mobiel-eerst) |
 | `parser.js` | Zet tekst/PDF om naar gestructureerde training |
-| `app.js` | UI, opslag (localStorage), PDF-import |
+| `gist.js` | Synchronisatie van trainingen via een gedeelde GitHub Gist |
+| `app.js` | UI, opslag (localStorage), PDF-import, gist-sync |
 | `manifest.json`, `sw.js` | PWA: installeerbaar + offline |
 | `voorbeeld-training.txt` | Voorbeeld in het juiste format |

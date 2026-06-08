@@ -177,6 +177,23 @@ input[type=text]:focus, textarea:focus { outline: none; border-color: var(--bran
 .pv-lvls { font-size: 12px; color: var(--muted); }
 
 .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
+.modal-actions.wrap { flex-wrap: wrap; }
+.modal-actions.wrap .btn { flex: 1 1 45%; }
+
+.gist-status {
+  background: #fff; border: 1px solid var(--line); border-left: 4px solid var(--muted);
+  border-radius: 10px; padding: 10px 12px; font-size: 13px; font-weight: 600;
+  color: var(--muted); margin-bottom: 14px;
+}
+.gist-status.ok { border-left-color: var(--done-line); color: var(--brand-d); }
+.gist-msg { font-size: 13px; font-weight: 600; margin: 12px 2px 0; min-height: 18px; }
+.gist-msg.ok { color: var(--done-line); }
+.gist-msg.err { color: var(--lvl3); }
+.gist-msg.busy { color: var(--brand); }
+code {
+  background: var(--line); border-radius: 5px; padding: 1px 5px;
+  font-size: .9em; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
 .btn { flex: 1; border: 0; border-radius: 12px; padding: 14px; font-size: 16px; font-weight: 700; cursor: pointer; }
 .btn.ghost { background: var(--line); color: var(--ink); }
 .btn.primary { background: var(--brand); color: #fff; }
