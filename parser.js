@@ -23,14 +23,6 @@
   "use strict";
 
   // Regex helpers
-  const BULLET = /^[\s\t]*[-*•·]\s+/;
-  const LEADING_WS = /^[\t ]*/;
-  const NIVEAU_LINE = /^niveau\s*([123])\b\s*[:.\-]?\s*(.*)$/i;
-
-  function stripBullet(line) {
-    return line.replace(/^[\s\t]*[-*•·]\s+/, "").trim();
-  }
-
   // Haal een afstand in meters uit een stuk tekst.
   // "2x 50m" -> 100, "3x 150m" -> 450, "150m (eerste 100m snorkel)" -> 150
   function parseDistance(str) {
@@ -76,18 +68,22 @@
     return ex;
   }
 
-  function addSubItem(ex, content) {
-    const m = content.match(NIVEAU_LINE);
-    if (m) {
-      ex.levels[m[1]] = (m[2] || "").trim();
-      return true;
-    }
-    ex.notes.push(content);
-    return false;
-  }
+  // ---- Inhoud-gestuurde parser ----
+  // Werkt zonder op inspringing te leunen, zodat PDF (waar tabs/bullets soms
+  // verloren gaan) en plaktekst hetzelfde resultaat geven. We herkennen
+  // oefeningen aan signalen in de tekst: "Oefening N", set-patronen ("3x"),
+  // bullets, "Niveau N" voor niveaus, "Definities" en "60% = ..." voor notities.
 
-  function isLevelLine(content) {
-    return NIVEAU_LINE.test(content);
+  const NIVEAU_LINE = /^niveau\s*([123])\b\s*[:.\-]?\s*(.*)$/i;
+  const SECTION_LINE = /^[A-Za-zÀ-ÿ'’\- ]{2,24}:$/;      // bv. "Inzwemmen:", "Techniek:"
+  const DEFS_LINE = /^defin\w*\s*:?$/i;                   // "Definities" / "Definities:"
+  const DEFINITION = /^\d{1,3}\s*%?\s*=/;                 // "60% = recovery"
+  const NEW_BY_NUMBER = /^oefening\b/i;                   // "Oefening 2: ..."
+  const NEW_BY_SETS = /^\d+\s*[x×]\b/i;                   // "3x ...", "1x ..."
+  const BULLET_PREFIX = /^[-*•·]\s+/;
+
+  function exHasLevels(ex) {
+    return ex && (Object.keys(ex.levels).length > 0 || ex.allLevels);
   }
 
   function parse(text) {
@@ -95,63 +91,82 @@
     const sections = [];
     let section = null;
     let exercise = null;
+    let inDefs = false;
 
     function ensureSection() {
-      if (!section) {
-        section = { title: "Training", exercises: [] };
-        sections.push(section);
-      }
+      if (!section) { section = { title: "Training", exercises: [] }; sections.push(section); }
+    }
+    function addExercise(content) {
+      ensureSection();
+      exercise = newExercise(content);
+      section.exercises.push(exercise);
+      inDefs = false;
     }
 
     for (const raw of lines) {
       const trimmed = raw.trim();
       if (trimmed === "") continue;
-      if (/^[-=_*]{3,}$/.test(trimmed)) continue; // scheidingslijn ---
+      if (/^[-=_*•·]{3,}$/.test(trimmed)) continue; // scheidingslijn ---
 
-      const isBullet = BULLET.test(raw);
-      const indentLen = (raw.match(LEADING_WS) || [""])[0].replace(/\t/g, "  ").length;
-      const isIndented = indentLen > 0;
+      const hadBullet = BULLET_PREFIX.test(trimmed);
+      const content = trimmed.replace(BULLET_PREFIX, "").trim();
+      if (!content) continue;
 
-      // Sectiekop: geen bullet, eindigt op ':' en niet ingesprongen
-      if (!isBullet && trimmed.endsWith(":") && !isIndented) {
-        section = { title: trimmed.replace(/:\s*$/, "").trim(), exercises: [] };
+      // 1) Sectiekop: korte regel met alleen letters/spaties die op ':' eindigt
+      if (SECTION_LINE.test(content) && !DEFS_LINE.test(content)) {
+        section = { title: content.replace(/:\s*$/, "").trim(), exercises: [] };
         sections.push(section);
-        exercise = null;
+        exercise = null; inDefs = false;
         continue;
       }
 
-      if (isBullet) {
-        const content = stripBullet(raw);
-
-        // Een "Niveau X" regel hoort altijd bij de huidige oefening
-        if (isLevelLine(content) && exercise) {
-          addSubItem(exercise, content);
-          continue;
-        }
-        // Ingesprongen bullet = sub-item (notitie) van de huidige oefening
-        if (isIndented && exercise) {
-          addSubItem(exercise, content);
-          continue;
-        }
-        // Anders: nieuwe oefening op het hoogste niveau
-        ensureSection();
-        exercise = newExercise(content);
-        section.exercises.push(exercise);
+      // 2) Definitieblok-kop ("Definities:")
+      if (DEFS_LINE.test(content)) {
+        addExercise(content.replace(/:\s*$/, ""));
+        inDefs = true;
         continue;
       }
 
-      // Niet-bullet regel die geen kop is -> notitie bij huidige oefening of sectie
-      if (exercise) {
-        if (isLevelLine(trimmed)) addSubItem(exercise, trimmed);
-        else exercise.notes.push(trimmed);
-      } else {
-        ensureSection();
-        exercise = newExercise(trimmed);
-        section.exercises.push(exercise);
+      // 3) Niveau-regel hoort altijd bij de huidige oefening
+      const mLvl = content.match(NIVEAU_LINE);
+      if (mLvl && exercise) {
+        exercise.levels[mLvl[1]] = (mLvl[2] || "").trim();
+        continue;
       }
+
+      // 4) Definitie-regel (bv. "60% = recovery") -> notitie
+      if (exercise && DEFINITION.test(content)) {
+        exercise.notes.push(content);
+        continue;
+      }
+      // 4b) Binnen het definitieblok: een regel zonder oefening-signaal is een
+      //     (omgebroken) vervolg van de vorige definitie -> aan die notitie plakken
+      if (inDefs && exercise && !mLvl &&
+          !NEW_BY_NUMBER.test(content) && !NEW_BY_SETS.test(content) && !hadBullet) {
+        if (exercise.notes.length) {
+          exercise.notes[exercise.notes.length - 1] += " " + content;
+        } else {
+          exercise.notes.push(content);
+        }
+        continue;
+      }
+
+      // 5) Sterke nieuwe-oefening signalen
+      if (NEW_BY_NUMBER.test(content) || NEW_BY_SETS.test(content) || hadBullet) {
+        addExercise(content);
+        continue;
+      }
+
+      // 6) Geen duidelijk signaal:
+      //    - had de vorige oefening al niveaus, dan is dit een nieuwe oefening
+      //    - anders is het waarschijnlijk een omgebroken vervolgregel -> aan titel plakken
+      if (exercise && !exHasLevels(exercise) && !inDefs) {
+        exercise.title = (exercise.title + " " + content).replace(/\s{2,}/g, " ").trim();
+        continue;
+      }
+      addExercise(content);
     }
 
-    // Lege secties opruimen
     return { sections: sections.filter((s) => s.exercises.length > 0) };
   }
 
