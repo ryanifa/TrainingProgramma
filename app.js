@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.2.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.2.1"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -331,20 +331,44 @@
     }
   }
 
-  // Reconstrueer regels uit pdf.js tekstitems op basis van hun y-positie
+  // Reconstrueer regels uit pdf.js tekstitems: groepeer op y-positie, herstel
+  // inspringing uit de x-positie (zodat sub-onderdelen herkend blijven) en
+  // voeg spaties toe waar tussen tekststukjes een gat zit.
   function reconstructLines(items) {
     const rows = [];
     for (const it of items) {
       if (!it.str) continue;
       const y = Math.round(it.transform[5]);
       const x = it.transform[4];
+      const w = it.width || 0;
       let row = rows.find((r) => Math.abs(r.y - y) <= 3);
       if (!row) { row = { y, parts: [] }; rows.push(row); }
-      row.parts.push({ x, str: it.str });
+      row.parts.push({ x, w, str: it.str });
     }
     rows.sort((a, b) => b.y - a.y);
+
+    // linkermarge bepalen om inspringing te kunnen herkennen
+    const lineXs = rows.map((r) => Math.min(...r.parts.map((p) => p.x)));
+    const baseX = lineXs.length ? Math.min(...lineXs) : 0;
+
     return rows
-      .map((r) => r.parts.sort((a, b) => a.x - b.x).map((p) => p.str).join("").replace(/\s+/g, " ").trim())
+      .map((r) => {
+        const parts = r.parts.slice().sort((a, b) => a.x - b.x);
+        let text = "";
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          if (i > 0) {
+            const prev = parts[i - 1];
+            const gap = p.x - (prev.x + prev.w);
+            if (gap > 1 && !/\s$/.test(text) && !/^\s/.test(p.str)) text += " ";
+          }
+          text += p.str;
+        }
+        text = text.replace(/\s+/g, " ").trim();
+        if (!text) return "";
+        const indented = (parts[0].x - baseX) > 10; // verder naar rechts = sub-onderdeel
+        return indented ? "\t" + text : text;
+      })
       .filter((l) => l.length)
       .join("\n");
   }
