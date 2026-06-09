@@ -170,6 +170,15 @@ body.no-scroll { overflow: hidden; }
 }
 .cd-ring.flash { animation: ringflash .5s ease-in-out 4; }
 @keyframes ringflash { 50% { filter: brightness(1.5); } }
+/* Pace clock: groene flits ("go!") bij elk interval, i.p.v. een piep */
+.pace-ring.interval::after {
+  content: ""; position: absolute; inset: -4px; border-radius: 50%;
+  box-shadow: 0 0 0 6px var(--done-line), 0 0 24px 6px var(--done-line);
+  animation: paceflash 1.1s ease-out forwards;
+}
+.pace-ring.interval .ring-num { animation: pacenum 1.1s ease-out; }
+@keyframes paceflash { 0% { opacity: 1; } 100% { opacity: 0; } }
+@keyframes pacenum { 0%, 100% { color: var(--ink); } 25% { color: var(--done-line); } }
 .presets { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 14px; }
 .presets button {
   border: 2px solid var(--line); background: #fff; color: var(--ink);
@@ -187,6 +196,14 @@ body.no-scroll { overflow: hidden; }
   padding: 8px; font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
 }
 .pace-int input:focus { outline: none; border-color: var(--brand); }
+
+/* Op lagere schermen de ringen iets kleiner zodat alles past */
+@media (max-height: 740px) {
+  .ring { width: 132px; height: 132px; margin-bottom: 10px; }
+  .ring::before { inset: 11px; }
+  .ring-num { font-size: 30px; }
+  .timer-block + .timer-block { margin-top: 6px; padding-top: 12px; }
+}
 
 /* Footer / versie */
 .app-footer {
@@ -231,11 +248,16 @@ body.no-scroll { overflow: hidden; }
 .modal { position: fixed; inset: 0; z-index: 50; }
 .modal-panel {
   position: absolute; left: 0; right: 0; bottom: 0; max-height: 92vh; overflow-y: auto;
-  background: var(--bg); border-radius: 18px 18px 0 0; padding: 16px 16px calc(env(safe-area-inset-bottom) + 16px);
+  background: var(--bg); border-radius: 18px 18px 0 0; padding: 0 16px calc(env(safe-area-inset-bottom) + 16px);
   box-shadow: 0 -6px 24px rgba(10, 25, 40, .25);
   max-width: 720px; margin: 0 auto;
 }
-.modal-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+/* Kop blijft bovenaan staan tijdens scrollen, zodat de ✕ altijd bereikbaar is */
+.modal-head {
+  position: sticky; top: 0; z-index: 4; background: var(--bg);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 0 12px; margin-bottom: 4px;
+}
 .modal-head h2 { margin: 0; font-size: 18px; }
 .modal-head .icon-btn { background: var(--line); color: var(--ink); }
 .tabs { display: flex; gap: 8px; margin-bottom: 14px; }

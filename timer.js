@@ -15,6 +15,17 @@
       if (actx.state === "suspended") actx.resume();
     } catch (e) { /* geen audio beschikbaar */ }
   }
+  // Ontgrendel audio bij de eerste aanraking (nodig op mobiel/iOS)
+  function unlockAudio() {
+    ensureAudio();
+    try {
+      if (actx) {
+        const b = actx.createBuffer(1, 1, 22050);
+        const s = actx.createBufferSource();
+        s.buffer = b; s.connect(actx.destination); s.start(0);
+      }
+    } catch (e) {}
+  }
   function beep(times = 1, freq = 880, dur = 0.15) {
     if (!actx) return;
     let t = actx.currentTime;
@@ -108,9 +119,15 @@
     paceRender(sec);
     if (pace.interval > 0) {
       const idx = Math.floor(sec / pace.interval);
-      if (idx > pace.lastIdx) { pace.lastIdx = idx; beep(2, 1050, 0.13); vibrate([160, 80, 160]); }
+      if (idx > pace.lastIdx) { pace.lastIdx = idx; paceFlash(); vibrate([160, 80, 160]); }
     }
     pace.timer = setTimeout(paceTick, 100);
+  }
+  function paceFlash() {
+    const r = $("paceRing");
+    r.classList.remove("interval");
+    void r.offsetWidth; // forceer herstart van de animatie
+    r.classList.add("interval");
   }
   function paceStartStop() {
     ensureAudio();
@@ -119,11 +136,11 @@
     pace.startAt = Date.now();
     pace.lastIdx = 0;
     pace.running = true;
-    beep(1, 1200, 0.1);
     paceTick();
   }
   function paceReset() {
     pace.running = false; clearTimeout(pace.timer);
+    $("paceRing").classList.remove("interval");
     paceRender(0);
   }
 
@@ -157,6 +174,9 @@
     $("paceStart").addEventListener("click", paceStartStop);
     $("paceReset").addEventListener("click", paceReset);
     $("paceInterval").addEventListener("change", () => { if (pace.running) pace.interval = parseInterval(); });
+
+    // audio ontgrendelen bij de eerste aanraking ergens in de app
+    document.addEventListener("pointerdown", unlockAudio, { once: true });
   }
 
   if (document.readyState === "loading") {
