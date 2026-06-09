@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.2.3"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.3.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -557,6 +557,31 @@
   $("resetBtn").addEventListener("click", resetChecks);
   $("deleteBtn").addEventListener("click", deleteTraining);
   $("settingsBtn").addEventListener("click", openSettings);
+
+  // ---- Installeren op startscherm ----
+  let deferredPrompt = null;
+  const isStandalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  if (isStandalone) $("installBtn").classList.add("hidden");
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+  });
+  $("installBtn").addEventListener("click", async () => {
+    closeAll();
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      return;
+    }
+    const iOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    if (iOS) {
+      alert("Installeren op iPhone/iPad:\n\n1. Tik op de deelknop (vierkant met pijltje) onderaan Safari.\n2. Kies \"Zet op beginscherm\".\n3. Tik op \"Voeg toe\".");
+    } else {
+      alert("Installeren:\n\nOpen het browsermenu (⋮) en kies \"App installeren\" of \"Toevoegen aan startscherm\".\n\n(Staat de app er al op? Dan is 'ie al geïnstalleerd.)");
+    }
+  });
+
   $("syncBtn").addEventListener("click", () => {
     closeAll();
     if (!gistId) { alert("Nog niet verbonden met een gedeelde gist. Open ⋯ → ☁️ Gedeelde trainingen."); openSettings(); return; }
