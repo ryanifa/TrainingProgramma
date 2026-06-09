@@ -205,6 +205,20 @@ body.no-scroll { overflow: hidden; }
   .timer-block + .timer-block { margin-top: 6px; padding-top: 12px; }
 }
 
+/* Cursist-modus: alleen lezen — geen menu, toevoegen, afvinken of timer */
+body.cursist #menuBtn,
+body.cursist #addBtn,
+body.cursist #emptyAddBtn,
+body.cursist #timerFab,
+body.cursist .progress-wrap,
+body.cursist .check { display: none !important; }
+body.cursist .card { cursor: default; border-color: transparent; }
+body.cursist .card:active { transform: none; }
+body.cursist .card.done { background: var(--card); border-color: transparent; }
+body.cursist .card.done .card-title { color: var(--ink); text-decoration: none; }
+body.cursist .rest-chip { pointer-events: none; }
+body.cursist .summary { padding-top: 14px; }
+
 /* Footer / versie */
 .app-footer {
   text-align: center; color: var(--muted); font-size: 12px;

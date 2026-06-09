@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.3.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.3.1"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -28,6 +28,19 @@
   if (hashMatch) {
     gistId = GistSync.parseGistId(decodeURIComponent(hashMatch[1]));
     localStorage.setItem(STORE_GISTID, gistId);
+  }
+
+  // Cursist-modus (alleen lezen) via de deel-link: #gist=<id>&view=cursist
+  const CURSIST = /view=cursist/i.test(location.hash);
+  if (CURSIST) {
+    document.body.classList.add("cursist");
+    const es = document.getElementById("emptyState");
+    if (es) {
+      const h = es.querySelector("h2");
+      const p = es.querySelectorAll("p")[1];
+      if (h) h.textContent = "Nog geen training";
+      if (p) p.textContent = "Je trainer heeft nog geen training gedeeld, of deze wordt nog geladen.";
+    }
   }
 
   // ---- Elementen ----
@@ -197,6 +210,7 @@
   }
 
   function toggle(trainingId, key, card, check) {
+    if (CURSIST) return; // cursisten vinken niet af
     const c = checksFor(trainingId);
     if (c[key]) { delete c[key]; card.classList.remove("done"); check.textContent = ""; }
     else { c[key] = true; card.classList.add("done"); check.textContent = "✓"; }
@@ -452,7 +466,9 @@
       save(STORE_ACTIVE, activeId);
       render();
       if (trainings.length === 0) {
-        setNotice("☁️ Verbonden met de gedeelde gist, maar er staan <strong>nog geen trainingen</strong> in. Voeg er één toe via <strong>+ Nieuw</strong> (token nodig) om te delen.", "warn");
+        setNotice(CURSIST
+          ? "☁️ Je trainer heeft nog geen training gedeeld. Kom later terug."
+          : "☁️ Verbonden met de gedeelde gist, maar er staan <strong>nog geen trainingen</strong> in. Voeg er één toe via <strong>+ Nieuw</strong> (token nodig) om te delen.", "warn");
       } else {
         setNotice("");
       }
@@ -525,20 +541,29 @@
     setMsg("Losgekoppeld. Trainingen blijven lokaal bewaard.", "ok");
   }
 
-  function shareLink() {
-    closeAll();
-    if (!gistId) {
-      alert("Nog geen gedeelde gist. Open eerst ☁️ Gedeelde trainingen om te verbinden of een gist aan te maken.");
-      openSettings();
-      return;
-    }
-    const url = location.origin + location.pathname + "#gist=" + gistId;
-    const done = () => alert("Link gekopieerd:\n\n" + url + "\n\nDeel deze met je mede-trainers.");
+  function copyLink(url, message) {
+    const done = () => alert(message + "\n\n" + url);
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(url).then(done, () => prompt("Kopieer de link:", url));
     } else {
       prompt("Kopieer de link:", url);
     }
+  }
+  function noGistYet() {
+    alert("Nog geen gedeelde gist. Open eerst ☁️ Gedeelde trainingen om te verbinden of een gist aan te maken.");
+    openSettings();
+  }
+  function shareLink() {
+    closeAll();
+    if (!gistId) { noGistYet(); return; }
+    const url = location.origin + location.pathname + "#gist=" + gistId;
+    copyLink(url, "Trainers-link gekopieerd. Hiermee kunnen mede-trainers lezen én (met token) uploaden:");
+  }
+  function shareCursistLink() {
+    closeAll();
+    if (!gistId) { noGistYet(); return; }
+    const url = location.origin + location.pathname + "#gist=" + gistId + "&view=cursist";
+    copyLink(url, "Cursisten-link gekopieerd. Alleen-lezen, zonder menu/afvinken — ideaal om vooraf te bekijken:");
   }
 
   // ---- Events ----
@@ -588,6 +613,7 @@
     pullFromGist(false);
   });
   $("shareBtn").addEventListener("click", shareLink);
+  $("shareCursistBtn").addEventListener("click", shareCursistLink);
   $("connectBtn").addEventListener("click", connectGist);
   $("createGistBtn").addEventListener("click", createGist);
   $("disconnectBtn").addEventListener("click", disconnectGist);
