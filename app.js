@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.7"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.2.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -50,6 +50,13 @@
   }
   function fmtMeters(m) {
     return m >= 1000 ? (m / 1000).toFixed(m % 1000 === 0 ? 0 : 1) + " km" : m + "m";
+  }
+  // Herken een rusttijd in seconden uit de oefeningtekst (bv. "15 seconden rust")
+  function restSeconds(ex) {
+    const text = (ex.title || "") + " " + (ex.notes || []).join(" ");
+    const m = text.match(/(\d+)\s*(?:seconden|seconde|sec\.?|s)\b[^.]*?\brust\b/i) ||
+              text.match(/\brust\b[^.]*?(\d+)\s*(?:seconden|seconde|sec\.?|s)\b/i);
+    return m ? parseInt(m[1], 10) : 0;
   }
 
   // ---- Render ----
@@ -154,6 +161,18 @@
           body.appendChild(notes);
         }
 
+        const rest = restSeconds(ex);
+        if (rest > 0 && window.SwimTimer) {
+          const chip = document.createElement("button");
+          chip.className = "rest-chip";
+          chip.innerHTML = `⏱ ${rest}s rust`;
+          chip.addEventListener("click", (e) => {
+            e.stopPropagation(); // niet de kaart afvinken
+            window.SwimTimer.openCountdown(rest);
+          });
+          body.appendChild(chip);
+        }
+
         card.appendChild(check);
         card.appendChild(body);
         card.addEventListener("click", () => toggle(t.id, key, card, check));
@@ -221,6 +240,8 @@
     menuSheet.classList.add("hidden");
     const sm = document.getElementById("settingsModal");
     if (sm) sm.classList.add("hidden");
+    const tm = document.getElementById("timerModal");
+    if (tm) tm.classList.add("hidden");
     document.body.classList.remove("no-scroll");
   }
 
@@ -499,6 +520,7 @@
   // ---- Events ----
   $("addBtn").addEventListener("click", openAdd);
   $("emptyAddBtn").addEventListener("click", openAdd);
+  $("timerFab").addEventListener("click", () => { if (window.SwimTimer) window.SwimTimer.open(); });
   $("saveBtn").addEventListener("click", doSave);
   $("menuBtn").addEventListener("click", () => {
     // Vinkjes/Verwijderen alleen relevant met een actieve training

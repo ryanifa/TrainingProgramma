@@ -1,11 +1,12 @@
 /* sw.js — eenvoudige offline cache voor de app-shell */
-const CACHE = "zwemtraining-1.1.7";
+const CACHE = "zwemtraining-1.2.0";
 const ASSETS = [
   "./",
   "./index.html",
   "./styles.css",
   "./parser.js",
   "./gist.js",
+  "./timer.js",
   "./app.js",
   "./manifest.json",
   "./icons/icon-192.png",

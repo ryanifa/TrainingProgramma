@@ -143,9 +143,46 @@
     </div>
   </div>
 
+  <!-- Zwevende timer-knop -->
+  <button id="timerFab" class="timer-fab" aria-label="Timer openen">⏱</button>
+
+  <!-- Timer paneel: rust-aftelklok + pace clock -->
+  <div id="timerModal" class="modal hidden">
+    <div class="modal-backdrop" data-close="timer"></div>
+    <div class="modal-panel timer-panel">
+      <div class="modal-head">
+        <h2>Timer</h2>
+        <button class="icon-btn" data-close="timer" aria-label="Sluiten">✕</button>
+      </div>
+
+      <section class="timer-block">
+        <h3>Rust</h3>
+        <div class="ring cd-ring" id="cdRing"><span class="ring-num" id="cdNum">00:15</span></div>
+        <div class="presets" id="cdPresets"></div>
+        <div class="timer-actions">
+          <button id="cdStart" class="btn primary">Start</button>
+          <button id="cdReset" class="btn ghost">Reset</button>
+        </div>
+      </section>
+
+      <section class="timer-block">
+        <h3>Pace clock</h3>
+        <div class="ring pace-ring" id="paceRing"><span class="ring-num" id="paceNum">00:00</span></div>
+        <label class="pace-int">Interval-piep
+          <input id="paceInterval" type="text" value="1:30" inputmode="text" placeholder="bijv. 1:30 of 30" />
+        </label>
+        <div class="timer-actions">
+          <button id="paceStart" class="btn primary">Start</button>
+          <button id="paceReset" class="btn ghost">Reset</button>
+        </div>
+      </section>
+    </div>
+  </div>
+
   <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
   <script src="parser.js"></script>
   <script src="gist.js"></script>
+  <script src="timer.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
