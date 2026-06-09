@@ -1,5 +1,5 @@
 /* sw.js — eenvoudige offline cache voor de app-shell */
-const CACHE = "zwemtraining-1.3.1";
+const CACHE = "zwemtraining-1.3.2";
 const ASSETS = [
   "./",
   "./index.html",

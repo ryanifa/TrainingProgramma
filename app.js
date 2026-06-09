@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.3.1"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.3.2"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -34,6 +34,11 @@
   const CURSIST = /view=cursist/i.test(location.hash);
   if (CURSIST) {
     document.body.classList.add("cursist");
+    // Niet installeerbaar maken: manifest + app-meta weghalen → gedraagt zich
+    // als een gewone webpagina, alleen te bekijken via de link.
+    document.querySelectorAll('link[rel="manifest"], link[rel="apple-touch-icon"]').forEach((el) => el.remove());
+    const cap = document.querySelector('meta[name="apple-mobile-web-app-capable"]');
+    if (cap) cap.remove();
     const es = document.getElementById("emptyState");
     if (es) {
       const h = es.querySelector("h2");
@@ -56,6 +61,13 @@
   // ---- Helpers ----
   function activeTraining() {
     return trainings.find((t) => t.id === activeId) || null;
+  }
+  // De meest recente training (hoogste 'created'); standaard de getoonde training
+  function latestTrainingId() {
+    if (!trainings.length) return null;
+    let best = trainings[0];
+    for (const t of trainings) if ((t.created || 0) > (best.created || 0)) best = t;
+    return best.id;
   }
   function checksFor(id) {
     if (!checks[id]) checks[id] = {};
@@ -461,8 +473,8 @@
       const data = await GistSync.fetchTrainings(gistId, token);
       trainings = data.trainings || [];
       save(STORE_TRAININGS, trainings);
-      if (!trainings.find((t) => t.id === activeId))
-        activeId = trainings[0] ? trainings[0].id : null;
+      // Standaard de laatste training tonen; alleen een nog-geldige selectie behouden
+      if (!trainings.find((t) => t.id === activeId)) activeId = latestTrainingId();
       save(STORE_ACTIVE, activeId);
       render();
       if (trainings.length === 0) {
@@ -651,7 +663,8 @@
   $("versionLabel").textContent = "versie " + APP_VERSION + " · " + BUILD_DATE;
 
   // Service worker + melding bij een nieuwe versie
-  if ("serviceWorker" in navigator) {
+  // (niet in cursist-modus: dan blijft de pagina een gewone, niet-installeerbare site)
+  if ("serviceWorker" in navigator && !CURSIST) {
     window.addEventListener("load", () => {
       navigator.serviceWorker.register("sw.js").then((reg) => {
         // controleer direct op een update
@@ -689,8 +702,8 @@
     });
   }
 
-  // Start
-  if (activeId && !activeTraining()) activeId = trainings[0] ? trainings[0].id : null;
+  // Start — toon standaard de laatste (meest recente) training
+  activeId = latestTrainingId();
   render();
   // Verbonden met een gedeelde gist? Haal de nieuwste trainingen op.
   if (gistId) pullFromGist(true);
