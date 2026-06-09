@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.4"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.5"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-08";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -421,17 +421,25 @@
     }
   }
 
-  let pushTimer = null;
   async function pushToGist() {
-    if (!gistId || !token) return; // alleen uploaden als er een token is
-    clearTimeout(pushTimer);
-    pushTimer = setTimeout(async () => {
-      try {
-        await GistSync.saveTrainings(gistId, token, trainings);
-      } catch (e) {
-        alert("Uploaden naar gedeelde gist mislukt: " + e.message);
-      }
-    }, 300);
+    if (!gistId) return; // niet verbonden: alleen lokaal, prima
+    if (!token) {
+      setNotice("⚠️ Wijziging staat <strong>alleen op dit toestel</strong> — geen token, dus niet gedeeld (en kan bij synchroniseren terugkomen). Voeg het token toe via <strong>⋯ → ☁️ Gedeelde trainingen</strong> om te uploaden.", "warn");
+      return;
+    }
+    setNotice("⏳ Wijziging uploaden naar de gedeelde gist…", "busy");
+    try {
+      // haal eerst de nieuwste versie zodat we niet per ongeluk werk van een
+      // andere trainer overschrijven, en upload daarna onze volledige lijst
+      await GistSync.saveTrainings(gistId, token, trainings);
+      setNotice("✓ Gedeelde gist bijgewerkt. Andere toestellen zien dit na synchroniseren.", "ok");
+      setTimeout(() => {
+        const el = $("gistNotice");
+        if (el && el.classList.contains("ok")) setNotice("");
+      }, 4000);
+    } catch (e) {
+      setNotice("⚠️ Uploaden mislukt: " + e.message, "err");
+    }
   }
 
   async function connectGist() {
@@ -503,6 +511,11 @@
   $("resetBtn").addEventListener("click", resetChecks);
   $("deleteBtn").addEventListener("click", deleteTraining);
   $("settingsBtn").addEventListener("click", openSettings);
+  $("syncBtn").addEventListener("click", () => {
+    closeAll();
+    if (!gistId) { alert("Nog niet verbonden met een gedeelde gist. Open ⋯ → ☁️ Gedeelde trainingen."); openSettings(); return; }
+    pullFromGist(false);
+  });
   $("shareBtn").addEventListener("click", shareLink);
   $("connectBtn").addEventListener("click", connectGist);
   $("createGistBtn").addEventListener("click", createGist);
