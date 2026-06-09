@@ -86,11 +86,18 @@ Zie [`voorbeeld-training.txt`](voorbeeld-training.txt) voor een complete trainin
 
 ## Online zetten (GitHub Pages)
 
-1. Push deze map naar GitHub (branch `main` of `master`).
-2. Repo → **Settings → Pages** → Source: *Deploy from a branch* → kies de branch
-   en map `/ (root)` → **Save**.
-3. Na ~1 minuut staat de app op `https://<gebruiker>.github.io/TrainingProgramma/`.
-4. Open op je telefoon → browsermenu → **Toevoegen aan beginscherm**.
+De deploy gaat automatisch via GitHub Actions (zie
+[`.github/workflows/pages.yml`](.github/workflows/pages.yml)): elke push naar
+`main` bouwt en publiceert de site.
+
+Eenmalig instellen: Repo → **Settings → Pages** → Source: **GitHub Actions**.
+Daarna staat de app op `https://<gebruiker>.github.io/TrainingProgramma/` en
+deployt elke push vanzelf. Open op je telefoon → browsermenu →
+**Toevoegen aan beginscherm**.
+
+> Let op: de oude optie *"Deploy from a branch"* bleek na de eerste build te
+> stoppen met automatisch deployen; daarom gebruikt dit project de
+> Actions-workflow.
 
 ## Lokaal testen
 
