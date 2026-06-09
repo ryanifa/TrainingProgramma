@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.1.6"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.1.7"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -559,6 +559,12 @@
       navigator.serviceWorker.register("sw.js").then((reg) => {
         // controleer direct op een update
         reg.update().catch(() => {});
+        // én telkens als de app weer naar de voorgrond komt (PWA-heropening)
+        document.addEventListener("visibilitychange", () => {
+          if (document.visibilityState === "visible") reg.update().catch(() => {});
+        });
+        // en periodiek, voor langlopende sessies
+        setInterval(() => reg.update().catch(() => {}), 30 * 60 * 1000);
         reg.addEventListener("updatefound", () => {
           const sw = reg.installing;
           if (!sw) return;
