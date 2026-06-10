@@ -32,6 +32,9 @@
     if (m) return parseInt(m[1], 10) * parseInt(m[2], 10);
     m = clean.match(/(\d+)\s*m\b/i);
     if (m) return parseInt(m[1], 10);
+    // kaal getal (bv. tabel-cel "100") = meters
+    m = clean.match(/^\s*(\d+)\s*$/);
+    if (m) return parseInt(m[1], 10);
     return 0;
   }
 

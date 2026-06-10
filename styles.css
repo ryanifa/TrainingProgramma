@@ -11,6 +11,7 @@
   --lvl1: #2f80ed;
   --lvl2: #9b51e0;
   --lvl3: #eb5757;
+  --lvl4: #e8920c;
   --shadow: 0 1px 3px rgba(20, 40, 60, .08), 0 4px 12px rgba(20, 40, 60, .05);
 }
 
@@ -76,6 +77,7 @@ body.no-scroll { overflow: hidden; }
 .total.lvl1 { border-left-color: var(--lvl1); }
 .total.lvl2 { border-left-color: var(--lvl2); }
 .total.lvl3 { border-left-color: var(--lvl3); }
+.total.lvl4 { border-left-color: var(--lvl4); }
 .total-tag { font-size: 11px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .03em; }
 .total-val { font-size: 18px; font-weight: 800; }
 
@@ -115,8 +117,10 @@ body.no-scroll { overflow: hidden; }
 .badge.lvl1 .badge-tag { background: var(--lvl1); }
 .badge.lvl2 .badge-tag { background: var(--lvl2); }
 .badge.lvl3 .badge-tag { background: var(--lvl3); }
+.badge.lvl4 .badge-tag { background: var(--lvl4); }
 .badge.all .badge-tag { background: var(--brand); }
 .notes { margin-top: 8px; font-size: 13px; color: var(--muted); }
+.tools { margin-top: 8px; font-size: 13px; font-weight: 600; color: var(--brand-d); }
 
 /* Gist-melding (laden / leeg / fout) */
 .gist-notice {
@@ -302,6 +306,8 @@ input[type=text]:focus, textarea:focus { outline: none; border-color: var(--bran
 .preview-row:first-of-type { border-top: 0; }
 .pv-title { font-size: 14px; font-weight: 600; }
 .pv-lvls { font-size: 12px; color: var(--muted); }
+.pv-tools { color: var(--brand-d); font-weight: 600; }
+.preview-levels { font-size: 12px; font-weight: 700; color: var(--brand-d); padding: 8px 8px 0; }
 
 .modal-actions { display: flex; gap: 10px; margin-top: 18px; }
 .modal-actions.wrap { flex-wrap: wrap; }

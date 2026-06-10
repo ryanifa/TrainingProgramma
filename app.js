@@ -2,7 +2,7 @@
 (function () {
   "use strict";
 
-  const APP_VERSION = "1.3.2"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
+  const APP_VERSION = "1.4.0"; // ophogen bij elke release (houd gelijk met sw.js CACHE)
   const BUILD_DATE = "2026-06-09";
 
   const STORE_TRAININGS = "tp_trainings";
@@ -69,6 +69,19 @@
     for (const t of trainings) if ((t.created || 0) > (best.created || 0)) best = t;
     return best.id;
   }
+  // Niveau-namen van een training: expliciet (tabel-import) of standaard 1/2/3
+  function trainingLevels(t) {
+    if (t && Array.isArray(t.levelNames) && t.levelNames.length) return { names: t.levelNames, named: true };
+    return { names: ["1", "2", "3"], named: false };
+  }
+  function levelLabel(name) { return /^[123]$/.test(name) ? "N" + name : name; }
+  function levelClass(i) { return "lvl" + ((i % 4) + 1); }
+  // Afstand per niveau van een oefening (named: per naam; legacy: 1/2/3 + allLevels)
+  function levelValue(ex, name, named) {
+    if (ex.levels && ex.levels[name] != null) return ex.levels[name];
+    if (!named && ex.allLevels && /^[123]$/.test(name)) return ex.allLevels;
+    return null;
+  }
   function checksFor(id) {
     if (!checks[id]) checks[id] = {};
     return checks[id];
@@ -101,25 +114,29 @@
     }
   }
 
-  function levelBadges(ex) {
+  function levelBadges(ex, info) {
     const wrap = document.createElement("div");
     wrap.className = "levels";
-    const hasPer = ex.levels && Object.keys(ex.levels).length > 0;
-    if (hasPer) {
-      for (const lvl of [1, 2, 3]) {
-        if (!ex.levels[lvl]) continue;
-        const b = document.createElement("span");
-        b.className = "badge lvl" + lvl;
-        b.innerHTML = `<span class="badge-tag">N${lvl}</span>${ex.levels[lvl]}`;
-        wrap.appendChild(b);
-      }
-    } else if (ex.allLevels) {
+    // Legacy: zelfde afstand voor alle niveaus → één "Alle"-badge
+    if (!info.named && (!ex.levels || Object.keys(ex.levels).length === 0) && ex.allLevels) {
       const b = document.createElement("span");
       b.className = "badge all";
-      b.innerHTML = `<span class="badge-tag">Alle</span>${ex.allLevels}`;
+      b.innerHTML = `<span class="badge-tag">Alle</span>${esc(ex.allLevels)}`;
       wrap.appendChild(b);
+      return wrap;
     }
+    info.names.forEach((name, i) => {
+      const val = levelValue(ex, name, info.named);
+      if (val == null) return;
+      const b = document.createElement("span");
+      b.className = "badge " + levelClass(i);
+      b.innerHTML = `<span class="badge-tag">${esc(levelLabel(name))}</span>${esc(val)}`;
+      wrap.appendChild(b);
+    });
     return wrap.children.length ? wrap : null;
+  }
+  function esc(s) {
+    return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
   }
 
   function render() {
@@ -143,6 +160,7 @@
       setNotice("");
     }
 
+    const info = trainingLevels(t);
     const tChecks = checksFor(t.id);
     let total = 0, done = 0;
 
@@ -176,8 +194,15 @@
         title.textContent = ex.title;
         body.appendChild(title);
 
-        const badges = levelBadges(ex);
+        const badges = levelBadges(ex, info);
         if (badges) body.appendChild(badges);
+
+        if (ex.tools) {
+          const tools = document.createElement("div");
+          tools.className = "tools";
+          tools.textContent = "🧰 " + ex.tools;
+          body.appendChild(tools);
+        }
 
         if (ex.notes && ex.notes.length) {
           const notes = document.createElement("div");
@@ -210,15 +235,23 @@
     progressText.textContent = `${done} van ${total} afgevinkt`;
     progressFill.style.width = total ? (done / total) * 100 + "%" : "0%";
 
-    const totals = TrainingParser.totalsPerLevel({ sections });
+    // Totale afstand per niveau
+    const totals = {};
+    info.names.forEach((n) => (totals[n] = 0));
+    sections.forEach((s) => (Array.isArray(s.exercises) ? s.exercises : []).forEach((ex) => {
+      info.names.forEach((n) => {
+        const v = levelValue(ex, n, info.named);
+        if (v != null) totals[n] += TrainingParser.parseDistance(v);
+      });
+    }));
     totalsEl.innerHTML = "";
-    for (const lvl of [1, 2, 3]) {
-      if (!totals[lvl]) continue;
+    info.names.forEach((n, i) => {
+      if (!totals[n]) return;
       const d = document.createElement("div");
-      d.className = "total lvl" + lvl;
-      d.innerHTML = `<span class="total-tag">Niveau ${lvl}</span><span class="total-val">${fmtMeters(totals[lvl])}</span>`;
+      d.className = "total " + levelClass(i);
+      d.innerHTML = `<span class="total-tag">${esc(levelLabel(n) === "N" + n ? "Niveau " + n : n)}</span><span class="total-val">${fmtMeters(totals[n])}</span>`;
       totalsEl.appendChild(d);
-    }
+    });
   }
 
   function toggle(trainingId, key, card, check) {
@@ -286,7 +319,14 @@
       saveBtn.disabled = true;
       return;
     }
+    const info = trainingLevels({ levelNames: parsed.levelNames });
     preview.innerHTML = "";
+    if (parsed.levelNames && parsed.levelNames.length) {
+      const lh = document.createElement("div");
+      lh.className = "preview-levels";
+      lh.textContent = "Niveaus: " + parsed.levelNames.join(" · ");
+      preview.appendChild(lh);
+    }
     parsed.sections.forEach((s) => {
       const h = document.createElement("div");
       h.className = "preview-section";
@@ -296,11 +336,16 @@
         const row = document.createElement("div");
         row.className = "preview-row";
         let lvls = "";
-        if (Object.keys(ex.levels).length)
-          lvls = [1, 2, 3].filter((l) => ex.levels[l]).map((l) => `N${l} ${ex.levels[l]}`).join(" · ");
-        else if (ex.allLevels) lvls = "Alle " + ex.allLevels;
+        if (ex.allLevels && !info.named) {
+          lvls = "Alle " + ex.allLevels;
+        } else {
+          lvls = info.names
+            .map((nm) => { const v = levelValue(ex, nm, info.named); return v == null ? null : `${levelLabel(nm)} ${v}`; })
+            .filter(Boolean).join(" · ");
+        }
+        const tools = ex.tools ? ` <span class="pv-tools">🧰 ${escapeHtml(ex.tools)}</span>` : "";
         row.innerHTML = `<span class="pv-title">${escapeHtml(ex.title)}</span>` +
-          (lvls ? `<span class="pv-lvls">${escapeHtml(lvls)}</span>` : "");
+          (lvls ? `<span class="pv-lvls">${escapeHtml(lvls)}${tools}</span>` : tools);
         preview.appendChild(row);
       });
     });
@@ -326,6 +371,9 @@
       created: Date.now(),
       sections: parsedDraft.sections,
     };
+    if (Array.isArray(parsedDraft.levelNames) && parsedDraft.levelNames.length) {
+      t.levelNames = parsedDraft.levelNames;
+    }
     trainings.unshift(t);
     activeId = t.id;
     save(STORE_TRAININGS, trainings);
@@ -342,13 +390,28 @@
       const buf = await file.arrayBuffer();
       const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
       let allText = "";
+      const tableItems = [];
+      const PAGE = 100000;
       for (let p = 1; p <= pdf.numPages; p++) {
         const page = await pdf.getPage(p);
         const tc = await page.getTextContent();
         allText += reconstructLines(tc.items) + "\n";
+        // geometrie voor de tabel-parser: y van boven naar beneden + pagina-offset
+        for (const it of tc.items) {
+          if (!it.str || !it.str.trim()) continue;
+          const tr = it.transform || [1, 0, 0, 1, 0, 0];
+          tableItems.push({ str: it.str, x: tr[4], y: -tr[5] + p * PAGE, w: it.width || 0 });
+        }
       }
       $("pdfLabel").textContent = "✅ " + file.name;
-      renderPreview(TrainingParser.parse(allText));
+      // Eerst proberen als kolommen-tabel (niveaus = kolommen); anders gewone tekst
+      let parsed = null;
+      try { parsed = window.PdfTable ? window.PdfTable.build(tableItems) : null; } catch (e) { parsed = null; }
+      if (parsed && TrainingParser.countExercises(parsed) >= 3) {
+        renderPreview(parsed);
+      } else {
+        renderPreview(TrainingParser.parse(allText));
+      }
     } catch (e) {
       console.error(e);
       $("pdfLabel").textContent = "⚠️ Kon PDF niet lezen — probeer tekst plakken";
